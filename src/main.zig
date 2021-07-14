@@ -5,18 +5,18 @@ const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
 const AccessError = std.os.AccessError;
 
+const Findup = struct { program: []u8, target: []u8, cwd: Dir };
+
 pub fn main() anyerror!void {
-    var args = std.process.args();
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    var allocator = &arena.allocator;
-    const program = try args.next(allocator).?;
-    try stdout.print("program: {s}\n", .{program});
-    const target = try args.next(allocator).?;
-    try stdout.print("target: {s}\n", .{target});
 
-    const cwd = std.fs.cwd();
+    const findup = try getFindup(&arena.allocator);
 
+    try stdout.print("program: {s}\n", .{findup.program});
+    try stdout.print("target: {s}\n", .{findup.target});
+
+    var cwd = findup.cwd;
     try printDir(cwd);
     //try std.os.chdir("..");
 
@@ -28,6 +28,21 @@ pub fn main() anyerror!void {
             try stdout.print("doesn't exist!\n", .{});
         }
     }
+}
+
+fn getFindup(allocator: *std.mem.Allocator) anyerror!Findup {
+    var args = std.process.args();
+    const program = try args.next(allocator).?;
+    //try stdout.print("program: {s}\n", .{program});
+    const target = try args.next(allocator).?;
+    //try stdout.print("target: {s}\n", .{target});
+    const cwd = std.fs.cwd();
+
+    return Findup{
+        .program = program,
+        .target = target,
+        .cwd = cwd,
+    };
 }
 
 fn printDir(dir: Dir) anyerror!void {
