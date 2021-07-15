@@ -5,37 +5,39 @@ const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
 const AccessError = std.os.AccessError;
 
-const Findup = struct { program: []u8, target: []u8, cwd: Dir };
+// TODO: Add --help and --verbose flags
+
+const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir };
 
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
+    var buf: [MAX_PATH_BYTES]u8 = undefined;
 
-    const findup = try getFindup(&arena.allocator);
+    const findup = try initFindup(&arena.allocator);
 
-    try stdout.print("program: {s}\n", .{findup.program});
-    try stdout.print("target: {s}\n", .{findup.target});
-
+    const target = findup.target.?;
     var cwd = findup.cwd;
-    try printDir(cwd);
-    //try std.os.chdir("..");
 
-    inline for (.{ "build.zig", "nonexist" }) |f| {
-        try stdout.print("file: {s}\n", .{f});
-        if (try fileExists(cwd, f)) {
-            try stdout.print("exists!\n", .{});
-        } else {
-            try stdout.print("doesn't exist!\n", .{});
-        }
-    }
+    const result = while (true) {
+        var cwdStr = try dirStr(cwd, buf[0..]);
+        if (try fileExists(cwd, target)) break cwdStr;
+        if (std.mem.eql(u8, "/", cwdStr)) break null;
+        try std.os.chdir("..");
+        cwd = std.fs.cwd();
+    } else unreachable;
+
+    if (result == null) std.os.exit(1);
+
+    try stdout.print("{s}\n", .{result.?});
 }
 
-fn getFindup(allocator: *std.mem.Allocator) anyerror!Findup {
+fn initFindup(allocator: *std.mem.Allocator) anyerror!Findup {
     var args = std.process.args();
+
     const program = try args.next(allocator).?;
-    //try stdout.print("program: {s}\n", .{program});
-    const target = try args.next(allocator).?;
-    //try stdout.print("target: {s}\n", .{target});
+    const maybeTarget = args.next(allocator);
+    const target = if (maybeTarget == null) null else try maybeTarget.?;
     const cwd = std.fs.cwd();
 
     return Findup{
@@ -45,10 +47,8 @@ fn getFindup(allocator: *std.mem.Allocator) anyerror!Findup {
     };
 }
 
-fn printDir(dir: Dir) anyerror!void {
-    var buffer: [MAX_PATH_BYTES]u8 = undefined;
-    const dir_str = try dir.realpath(".", &buffer);
-    try stdout.print("{s}\n", .{dir_str});
+fn dirStr(dir: Dir, buf: []u8) anyerror![]u8 {
+    return try dir.realpath(".", buf);
 }
 
 fn fileExists(dir: Dir, filename: []const u8) AccessError!bool {
