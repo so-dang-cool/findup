@@ -9,6 +9,7 @@ const AccessError = std.os.AccessError;
 // TODO: Add --help and --verbose flags
 
 const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir };
+const FindupError = error{NoFileSpecified};
 
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -16,7 +17,7 @@ pub fn main() anyerror!void {
     var buf: [MAX_PATH_BYTES]u8 = undefined;
 
     const findup = initFindup(&arena.allocator) catch |err| {
-        try stderr.print("error encountered: {e}\n", .{err});
+        try stderr.print("ERROR: {e}\n", .{err});
         try stderr.print("Usage: findup FILE\n", .{});
         std.os.exit(1);
     };
@@ -42,7 +43,7 @@ fn initFindup(allocator: *std.mem.Allocator) anyerror!Findup {
 
     const program = try args.next(allocator).?;
     const maybeTarget = args.next(allocator);
-    const target = if (maybeTarget == null) null else try maybeTarget.?;
+    const target = if (maybeTarget == null) return FindupError.NoFileSpecified else try maybeTarget.?;
     const cwd = std.fs.cwd();
 
     return Findup{
