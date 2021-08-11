@@ -1,5 +1,6 @@
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
+const stderr = std.io.getStdErr().writer();
 const Writer = std.io.Writer;
 const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
@@ -14,7 +15,11 @@ pub fn main() anyerror!void {
     defer arena.deinit();
     var buf: [MAX_PATH_BYTES]u8 = undefined;
 
-    const findup = try initFindup(&arena.allocator);
+    const findup = initFindup(&arena.allocator) catch |err| {
+        try stderr.print("error encountered: {e}\n", .{err});
+        try stderr.print("Usage: findup FILE\n", .{});
+        std.os.exit(1);
+    };
 
     const target = findup.target.?;
     var cwd = findup.cwd;
