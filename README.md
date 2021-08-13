@@ -1,5 +1,3 @@
-# `findup`
-
 ```text
 Usage: findup FILE
 
