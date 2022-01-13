@@ -27,10 +27,11 @@ const USAGE =
 
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var alloc = arena.allocator();
     defer arena.deinit();
     var buf: [MAX_PATH_BYTES]u8 = undefined;
 
-    const findup = initFindup(&arena.allocator) catch |err| {
+    const findup = initFindup(alloc) catch |err| {
         try stderr.print("ERROR: {e}\n{s}", .{ err, USAGE });
         std.os.exit(1);
     };
@@ -59,11 +60,11 @@ pub fn main() anyerror!void {
     try stdout.print("{s}\n", .{result.?});
 }
 
-fn initFindup(allocator: *std.mem.Allocator) anyerror!Findup {
+fn initFindup(alloc: std.mem.Allocator) anyerror!Findup {
     var args = std.process.args();
 
-    const program = try args.next(allocator).?;
-    const maybeTarget = args.next(allocator);
+    const program = try args.next(alloc).?;
+    const maybeTarget = args.next(alloc);
     const target = if (maybeTarget == null) return FindupError.NoFileSpecified else try maybeTarget.?;
     const cwd = std.fs.cwd();
 
