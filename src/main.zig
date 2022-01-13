@@ -6,10 +6,24 @@ const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
 const AccessError = std.os.AccessError;
 
-// TODO: Add --help and --verbose flags
-
-const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir };
+const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir, printHelp: bool, printVersion: bool };
 const FindupError = error{NoFileSpecified};
+
+const VERSION = "findup 1.0\n";
+
+const USAGE =
+    \\USAGE:
+    \\    findup FILE
+    \\
+    \\FLAGS:
+    \\    -h, --help    Prints help information
+    \\    -V, --version Prints version information
+    \\
+    \\Finds a directory containing FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
+    \\
+    \\The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.
+    \\
+;
 
 pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -17,10 +31,17 @@ pub fn main() anyerror!void {
     var buf: [MAX_PATH_BYTES]u8 = undefined;
 
     const findup = initFindup(&arena.allocator) catch |err| {
-        try stderr.print("ERROR: {e}\n", .{err});
-        try stderr.print("Usage: findup FILE\n", .{});
+        try stderr.print("ERROR: {e}\n{s}", .{ err, USAGE });
         std.os.exit(1);
     };
+
+    if (findup.printHelp) {
+        try stdout.print("{s}\n{s}", .{ VERSION, USAGE });
+        std.os.exit(0);
+    } else if (findup.printVersion) {
+        try stdout.print(VERSION, .{});
+        std.os.exit(0);
+    }
 
     const target = findup.target.?;
     var cwd = findup.cwd;
@@ -46,11 +67,10 @@ fn initFindup(allocator: *std.mem.Allocator) anyerror!Findup {
     const target = if (maybeTarget == null) return FindupError.NoFileSpecified else try maybeTarget.?;
     const cwd = std.fs.cwd();
 
-    return Findup{
-        .program = program,
-        .target = target,
-        .cwd = cwd,
-    };
+    var printHelp = std.mem.eql(u8, "-h", target) or std.mem.eql(u8, "--help", target);
+    var printVersion = std.mem.eql(u8, "-V", target) or std.mem.eql(u8, "--version", target);
+
+    return Findup{ .program = program, .target = target, .cwd = cwd, .printHelp = printHelp, .printVersion = printVersion };
 }
 
 fn dirStr(dir: Dir, buf: []u8) anyerror![]u8 {

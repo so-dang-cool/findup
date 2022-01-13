@@ -1,14 +1,17 @@
 ```text
-Usage: findup FILE
+findup 1.0
 
-Finds a directory containing FILE. Starts at the current working directory, and
-searches "up" through each parent directory.
+USAGE:
+    findup FILE
 
-When a directory is found, it is printed to stdout.
+FLAGS:
+    -h, --help    Prints help information
+    -V, --version Prints version information
 
-If no directory containing FILE is found, nothing is printed, and the
-program exits with an exit code of 1.
+Finds a directory containing FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
 
-By: J.R. Hill <hiljusti@pm.me>
+The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.⏎      
 ```
 
+MIT License.
+By J.R. Hill (hiljusti (at) so.dang.cool)
