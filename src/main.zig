@@ -9,7 +9,7 @@ const AccessError = std.os.AccessError;
 const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir, printHelp: bool, printVersion: bool };
 const FindupError = error{NoFileSpecified};
 
-const VERSION = "findup 1.0\n";
+const VERSION = "findup 1.1-rc\n";
 
 const USAGE =
     \\USAGE:
