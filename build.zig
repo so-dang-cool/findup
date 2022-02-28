@@ -23,8 +23,8 @@ pub fn build(b: *std.build.Builder) void {
 
     // ----- test -----
 
-    const test_cmd = b.addSystemCommand(&[_][]const u8{"./test.bats"});
+    const test_cmd = b.addTest("src/test.zig");
     test_cmd.step.dependOn(b.getInstallStep());
-    const test_step = b.step("test", "Run BATS to test the CLI");
+    const test_step = b.step("test", "Run test against the built CLI");
     test_step.dependOn(&test_cmd.step);
 }
