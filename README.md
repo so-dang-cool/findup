@@ -1,5 +1,5 @@
 ```text
-findup 1.0
+findup 1.1
 
 USAGE:
     findup FILE
