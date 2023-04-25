@@ -6,7 +6,7 @@ const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
 const AccessError = std.os.AccessError;
 
-const Findup = struct { program: []u8, target: ?[]u8, cwd: Dir, printHelp: bool, printVersion: bool };
+const Findup = struct { program: [:0]const u8, target: [:0]const u8, cwd: Dir, printHelp: bool, printVersion: bool };
 const FindupError = error{NoFileSpecified};
 
 const VERSION = "findup 1.1-rc\n";
@@ -26,13 +26,10 @@ const USAGE =
 ;
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var alloc = arena.allocator();
-    defer arena.deinit();
     var buf: [MAX_PATH_BYTES]u8 = undefined;
 
-    const findup = initFindup(alloc) catch |err| {
-        try stderr.print("ERROR: {e}\n{s}", .{ err, USAGE });
+    const findup = initFindup() catch |err| {
+        try stderr.print("ERROR: {?}\n\n{s}", .{ err, USAGE });
         std.os.exit(1);
     };
 
@@ -44,12 +41,11 @@ pub fn main() anyerror!void {
         std.os.exit(0);
     }
 
-    const target = findup.target.?;
     var cwd = findup.cwd;
 
     const result = while (true) {
         var cwdStr = try dirStr(cwd, buf[0..]);
-        if (try fileExists(cwd, target)) break cwdStr;
+        if (try fileExists(cwd, findup.target)) break cwdStr;
         if (std.mem.eql(u8, "/", cwdStr)) break null;
         try std.os.chdir("..");
         cwd = std.fs.cwd();
@@ -60,12 +56,12 @@ pub fn main() anyerror!void {
     try stdout.print("{s}\n", .{result.?});
 }
 
-fn initFindup(alloc: std.mem.Allocator) anyerror!Findup {
+fn initFindup() anyerror!Findup {
     var args = std.process.args();
 
-    const program = try args.next(alloc).?;
-    const maybeTarget = args.next(alloc);
-    const target = if (maybeTarget == null) return FindupError.NoFileSpecified else try maybeTarget.?;
+    const program = args.next().?;
+    const maybeTarget = args.next();
+    const target = if (maybeTarget == null) return FindupError.NoFileSpecified else maybeTarget.?;
     const cwd = std.fs.cwd();
 
     var printHelp = std.mem.eql(u8, "-h", target) or std.mem.eql(u8, "--help", target);
