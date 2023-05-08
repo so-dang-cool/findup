@@ -1,3 +1,5 @@
+# `findup`
+
 ```text
 findup 1.1
 
@@ -12,6 +14,12 @@ Finds a directory containing FILE. Tested by filename with exact string equality
 
 The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.⏎      
 ```
+
+# Installation
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/findup.svg)](https://repology.org/project/findup/versions)
+
+# Misc
 
 MIT License.
 By J.R. Hill (hiljusti (at) so.dang.cool)
