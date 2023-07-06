@@ -13,7 +13,7 @@ test "findup --version" {
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    try testing.expectEqualStrings("findup 1.1-rc\n", result.stdout);
+    try testing.expectEqualStrings("findup 1.1.1\n", result.stdout);
 }
 
 test "findup build.zig" {
