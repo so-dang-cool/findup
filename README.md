@@ -1,7 +1,7 @@
 # `findup`
 
 ```text
-findup 1.1
+findup 1.1.1
 
 USAGE:
     findup FILE
