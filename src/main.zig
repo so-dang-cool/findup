@@ -23,6 +23,8 @@ const USAGE =
     \\
     \\The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.
     \\
+    \\By J.R. Hill. https://github.com/booniepepper/findup
+    \\
 ;
 
 pub fn main() anyerror!void {

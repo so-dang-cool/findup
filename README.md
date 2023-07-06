@@ -22,4 +22,4 @@ The first directory containing FILE will be printed. If no directory contains FI
 # Misc
 
 MIT License.
-By J.R. Hill (hiljusti (at) so.dang.cool)
+By J.R. Hill (justin (at) so.dang.cool)
