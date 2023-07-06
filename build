@@ -35,12 +35,8 @@ cross-release() {
         aarch64-linux-musleabi
         arm-linux-musleabi
         arm-linux-musleabihf
-        x86-linux-gnu
-        x86-linux-musl
-        mips64el-linux-gnuabi64
-        mips64el-linux-musl
-        mips64-linux-gnuabi64
-        mips64-linux-musl
+        x86_64-linux-gnu
+        x86_64-linux-musl
         mipsel-linux-gnu
         mipsel-linux-musl
         mips-linux-gnu
@@ -61,7 +57,7 @@ cross-release() {
         local out="$project_root"/target/"$triple"
         mkdir -p "$out"
 
-        zig build -Doptimize=ReleaseSmall -Dtarget="$triple" -p "$out"
+        zig build -Drelease-small=true -Dtarget="$triple" -p "$out"
     done
 }
 
