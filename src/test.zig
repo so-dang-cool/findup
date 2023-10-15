@@ -13,7 +13,7 @@ test "findup --version" {
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    try testing.expectEqualStrings("findup 1.1.1\n", result.stdout);
+    try testing.expectEqualStrings("findup 1.1.2\n", result.stdout);
 }
 
 test "findup build.zig" {
@@ -23,10 +23,12 @@ test "findup build.zig" {
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
+    var buf: [256]u8 = undefined;
+    const cwd = try std.os.getcwd(&buf);
+
     // Test that some non-empty string is returned.
-    const zero: usize = 0;
-    const is_equal = testing.expectEqual(zero, result.stdout.len);
-    try testing.expectError(error.TestExpectedEqual, is_equal);
+    try testing.expectStringStartsWith(std.mem.trimRight(u8, cwd, &std.ascii.whitespace), std.mem.trimRight(u8, result.stdout, &std.ascii.whitespace));
+    try testing.expectEqualStrings("", result.stderr);
 }
 
 test "findup SOME_FILE_THAT_I_SUPPOSE_DOES_NOT_EXIST" {
@@ -36,8 +38,7 @@ test "findup SOME_FILE_THAT_I_SUPPOSE_DOES_NOT_EXIST" {
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    const zero: usize = 0;
     try testing.expectEqual(ChildProcess.Term{ .Exited = 1 }, result.term);
-    try testing.expectEqual(zero, result.stdout.len);
-    try testing.expectEqual(zero, result.stderr.len);
+    try testing.expectEqualStrings("", result.stdout);
+    try testing.expectEqualStrings("", result.stderr);
 }

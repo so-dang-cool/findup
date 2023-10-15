@@ -12,21 +12,24 @@ jobs:
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2.1.0
         with:
-          version: 0.10.1
+          version: 0.11.0
 
       - name: Checkout project
         uses: actions/checkout@v3
 
-      - name: Build and Test
-        run: ./build compile test release
+      - name: zig build test
+        run: |
+          zig env
+          zig build test
 
-      - name: Cross Compile
-        run: ./build cross-release cross-tar
+      - name: zig build cross -Doptimize=ReleaseSmall
+        run: |
+          zig env
+          zig build cross -Doptimize=ReleaseSmall
 
       - name: Upload the artifacts
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: 'target/*.tgz'
-
+          args: 'zig-out/cross/*/findup-*.tgz'
