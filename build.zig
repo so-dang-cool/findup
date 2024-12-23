@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) !void {
     const compile_step = b.step("findup", "Install findup executable");
     const cross_step = b.step("cross", "Generate cross-compiled executables");
 
-    const source = std.Build.FileSource.relative("src/main.zig");
+    const source = b.path("src/main.zig");
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = source,
@@ -23,11 +23,12 @@ pub fn build(b: *std.Build) !void {
 
     // Cross-compile
     inline for (TRIPLES) |TRIPLE| {
+        const cross_target = b.resolveTargetQuery(try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }));
         const cross = b.addExecutable(.{
             .name = name,
             .root_source_file = source,
             .optimize = optimize,
-            .target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }),
+            .target = cross_target,
         });
 
         const cross_install = b.addInstallArtifact(cross, .{
@@ -35,14 +36,14 @@ pub fn build(b: *std.Build) !void {
         });
 
         const cross_tar = b.addSystemCommand(&.{ "sh", "-c", "tar -czvf findup-" ++ TRIPLE ++ ".tgz findup" });
-        cross_tar.cwd = "./zig-out/cross/" ++ TRIPLE;
+        cross_tar.cwd = b.path("./zig-out/cross/" ++ TRIPLE);
 
         cross_tar.step.dependOn(&cross_install.step);
         cross_step.dependOn(&cross_tar.step);
     }
 
     // Tests
-    const testSource = std.Build.FileSource.relative("src/test.zig");
+    const testSource = b.path("src/test.zig");
 
     const test_exe = b.addTest(.{
         .root_source_file = testSource,

@@ -4,7 +4,7 @@ const stderr = std.io.getStdErr().writer();
 const Writer = std.io.Writer;
 const Dir = std.fs.Dir;
 const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
-const AccessError = std.os.AccessError;
+const AccessError = std.posix.AccessError;
 
 const Findup = struct { program: [:0]const u8, target: [:0]const u8, cwd: Dir, printHelp: bool, printVersion: bool };
 const FindupError = error{NoFileSpecified};
@@ -32,28 +32,28 @@ pub fn main() anyerror!void {
 
     const findup = initFindup() catch |err| {
         try stderr.print("ERROR: {?}\n\n{s}", .{ err, USAGE });
-        std.os.exit(1);
+        std.process.exit(1);
     };
 
     if (findup.printHelp) {
         try stdout.print("{s}\n{s}", .{ VERSION, USAGE });
-        std.os.exit(0);
+        std.process.exit(0);
     } else if (findup.printVersion) {
         try stdout.print(VERSION, .{});
-        std.os.exit(0);
+        std.process.exit(0);
     }
 
     var cwd = findup.cwd;
 
     const result = while (true) {
-        var cwdStr = try dirStr(cwd, buf[0..]);
+        const cwdStr = try dirStr(cwd, buf[0..]);
         if (try fileExists(cwd, findup.target)) break cwdStr;
         if (std.mem.eql(u8, "/", cwdStr)) break null;
-        try std.os.chdir("..");
+        try std.posix.chdir("..");
         cwd = std.fs.cwd();
     } else unreachable;
 
-    if (result == null) std.os.exit(1);
+    if (result == null) std.process.exit(1);
 
     try stdout.print("{s}\n", .{result.?});
 }
@@ -66,8 +66,8 @@ fn initFindup() anyerror!Findup {
     const target = if (maybeTarget == null) return FindupError.NoFileSpecified else maybeTarget.?;
     const cwd = std.fs.cwd();
 
-    var printHelp = std.mem.eql(u8, "-h", target) or std.mem.eql(u8, "--help", target);
-    var printVersion = std.mem.eql(u8, "-V", target) or std.mem.eql(u8, "--version", target);
+    const printHelp = std.mem.eql(u8, "-h", target) or std.mem.eql(u8, "--help", target);
+    const printVersion = std.mem.eql(u8, "-V", target) or std.mem.eql(u8, "--version", target);
 
     return Findup{ .program = program, .target = target, .cwd = cwd, .printHelp = printHelp, .printVersion = printVersion };
 }
