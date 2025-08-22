@@ -2,24 +2,22 @@ const std = @import("std");
 const testing = std.testing;
 const allocator = testing.allocator;
 
-const ChildProcess = std.process.Child;
-
 const findup = "./zig-out/bin/findup";
 
 test "findup --version" {
     const invocation = &[_][]const u8{ findup, "--version" };
-    const result = try ChildProcess.run(.{ .argv = invocation, .allocator = allocator });
+
+    const result = try std.process.Child.run(.{ .allocator = allocator, .argv = invocation });
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    try testing.expectEqualStrings("findup 1.1.2\n", result.stdout);
+    try testing.expectEqualStrings("findup 1.1.3\n", result.stdout);
 }
 
 test "findup build.zig" {
     const invocation = &[_][]const u8{ findup, "build.zig" };
 
-    const result = try ChildProcess.run(.{ .argv = invocation, .allocator = allocator });
-
+    const result = try std.process.Child.run(.{ .allocator = allocator, .argv = invocation });
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
@@ -34,11 +32,11 @@ test "findup build.zig" {
 test "findup SOME_FILE_THAT_I_SUPPOSE_DOES_NOT_EXIST" {
     const invocation = &[_][]const u8{ findup, "SOME_FILE_THAT_I_SUPPOSE_DOES_NOT_EXIST" };
 
-    const result = try ChildProcess.run(.{ .argv = invocation, .allocator = allocator });
+    const result = try std.process.Child.run(.{ .allocator = allocator, .argv = invocation });
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    try testing.expectEqual(ChildProcess.Term{ .Exited = 1 }, result.term);
+    try testing.expectEqual(std.process.Child.Term{ .Exited = 1 }, result.term);
     try testing.expectEqualStrings("", result.stdout);
     try testing.expectEqualStrings("", result.stderr);
 }

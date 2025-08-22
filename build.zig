@@ -23,12 +23,12 @@ pub fn build(b: *std.Build) !void {
 
     // Cross-compile
     inline for (TRIPLES) |TRIPLE| {
-        const cross_target = b.resolveTargetQuery(try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }));
+        const query = try std.Target.Query.parse(.{ .arch_os_abi = TRIPLE });
         const cross = b.addExecutable(.{
             .name = name,
             .root_source_file = source,
             .optimize = optimize,
-            .target = cross_target,
+            .target = .{ .query = query, .result = try std.zig.system.resolveTargetQuery(query) },
         });
 
         const cross_install = b.addInstallArtifact(cross, .{
@@ -36,7 +36,7 @@ pub fn build(b: *std.Build) !void {
         });
 
         const cross_tar = b.addSystemCommand(&.{ "sh", "-c", "tar -czvf findup-" ++ TRIPLE ++ ".tgz findup" });
-        cross_tar.cwd = b.path("./zig-out/cross/" ++ TRIPLE);
+        cross_tar.setCwd(b.path("./zig-out/cross/" ++ TRIPLE));
 
         cross_tar.step.dependOn(&cross_install.step);
         cross_step.dependOn(&cross_tar.step);

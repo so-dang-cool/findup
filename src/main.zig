@@ -3,13 +3,12 @@ const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 const Writer = std.io.Writer;
 const Dir = std.fs.Dir;
-const MAX_PATH_BYTES = std.fs.MAX_PATH_BYTES;
-const AccessError = std.posix.AccessError;
+const exit = std.posix.exit;
 
 const Findup = struct { program: [:0]const u8, target: [:0]const u8, cwd: Dir, printHelp: bool, printVersion: bool };
 const FindupError = error{NoFileSpecified};
 
-const VERSION = "findup 1.1.2\n";
+const VERSION = "findup 1.1.3\n";
 
 const USAGE =
     \\USAGE:
@@ -28,19 +27,19 @@ const USAGE =
 ;
 
 pub fn main() anyerror!void {
-    var buf: [MAX_PATH_BYTES]u8 = undefined;
+    var buf: [std.fs.max_path_bytes]u8 = undefined;
 
     const findup = initFindup() catch |err| {
         try stderr.print("ERROR: {?}\n\n{s}", .{ err, USAGE });
-        std.process.exit(1);
+        exit(1);
     };
 
     if (findup.printHelp) {
         try stdout.print("{s}\n{s}", .{ VERSION, USAGE });
-        std.process.exit(0);
+        exit(0);
     } else if (findup.printVersion) {
         try stdout.print(VERSION, .{});
-        std.process.exit(0);
+        exit(0);
     }
 
     var cwd = findup.cwd;
@@ -53,7 +52,7 @@ pub fn main() anyerror!void {
         cwd = std.fs.cwd();
     } else unreachable;
 
-    if (result == null) std.process.exit(1);
+    if (result == null) exit(1);
 
     try stdout.print("{s}\n", .{result.?});
 }
@@ -76,10 +75,10 @@ fn dirStr(dir: Dir, buf: []u8) anyerror![]u8 {
     return try dir.realpath(".", buf);
 }
 
-fn fileExists(dir: Dir, filename: []const u8) AccessError!bool {
+fn fileExists(dir: Dir, filename: []const u8) !bool {
     dir.access(filename, .{}) catch |err| {
         return switch (err) {
-            AccessError.FileNotFound => false,
+            error.FileNotFound => false,
             else => err,
         };
     };

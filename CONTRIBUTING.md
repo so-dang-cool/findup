@@ -1,6 +1,11 @@
 # Building
 
-If you use asdf (with a Zig plugin) as a version manager, just `zig build`.
+Tools required are provided for mise and aqua, but really you just need zig.
 
-If you don't also use asdf, use the version of Zig listed in `./tool-versions` file.
+Build on your os/arch:
 
+`zig build`
+
+Build many:
+
+`zig build cross`

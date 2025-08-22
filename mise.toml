@@ -1,0 +1,3 @@
+[tools]
+zig = "0.14"
+zls = "latest"
