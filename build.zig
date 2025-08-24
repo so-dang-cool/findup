@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) !void {
             .dest_dir = .{ .override = .{ .custom = "cross/" ++ TRIPLE } },
         });
 
-        const cross_tar = b.addSystemCommand(&.{ "sh", "-c", "tar -czvf findup-" ++ TRIPLE ++ ".tgz findup" });
+        const cross_tar = b.addSystemCommand(&.{ "sh", "-c", "cp ../../../LICENSE . && echo " ++ TRIPLE ++ "... && tar -czf findup-" ++ TRIPLE ++ ".tgz findup LICENSE" });
         cross_tar.setCwd(b.path("./zig-out/cross/" ++ TRIPLE));
 
         cross_tar.step.dependOn(&cross_install.step);
