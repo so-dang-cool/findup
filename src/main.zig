@@ -99,7 +99,7 @@ fn initFindup() Findup {
             printHelp = true
         else if (flagged(arg, "-V", "--version"))
             printVersion = true
-        else
+        else if (target == null)
             target = arg;
     }
 
