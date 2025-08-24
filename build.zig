@@ -13,9 +13,11 @@ pub fn build(b: *std.Build) !void {
     const source = b.path("src/main.zig");
     const exe = b.addExecutable(.{
         .name = name,
-        .root_source_file = source,
-        .optimize = optimize,
-        .target = target,
+        .root_module = b.createModule(.{
+            .root_source_file = source,
+            .optimize = optimize,
+            .target = target,
+        }),
     });
     const install_exe = b.addInstallArtifact(exe, .{});
     compile_step.dependOn(&install_exe.step);
@@ -26,9 +28,11 @@ pub fn build(b: *std.Build) !void {
         const query = try std.Target.Query.parse(.{ .arch_os_abi = TRIPLE });
         const cross = b.addExecutable(.{
             .name = name,
-            .root_source_file = source,
-            .optimize = optimize,
-            .target = .{ .query = query, .result = try std.zig.system.resolveTargetQuery(query) },
+            .root_module = b.createModule(.{
+                .root_source_file = source,
+                .optimize = optimize,
+                .target = .{ .query = query, .result = try std.zig.system.resolveTargetQuery(query) },
+            }),
         });
 
         const cross_install = b.addInstallArtifact(cross, .{
@@ -46,9 +50,11 @@ pub fn build(b: *std.Build) !void {
     const testSource = b.path("src/test.zig");
 
     const test_exe = b.addTest(.{
-        .root_source_file = testSource,
-        .optimize = optimize,
-        .target = target,
+        .root_module = b.createModule(.{
+            .root_source_file = testSource,
+            .optimize = optimize,
+            .target = target,
+        }),
     });
 
     const test_run = b.addRunArtifact(test_exe);

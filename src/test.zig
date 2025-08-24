@@ -11,7 +11,7 @@ test "findup --version" {
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    try testing.expectEqualStrings("findup 1.1.3\n", result.stdout);
+    try testing.expectEqualStrings("findup 2.0.0\n", result.stdout);
 }
 
 test "findup build.zig" {
@@ -25,7 +25,9 @@ test "findup build.zig" {
     const cwd = try std.posix.getcwd(&buf);
 
     // Test that some non-empty string is returned.
-    try testing.expectStringStartsWith(std.mem.trimRight(u8, cwd, &std.ascii.whitespace), std.mem.trimRight(u8, result.stdout, &std.ascii.whitespace));
+    try testing.expectStringStartsWith(result.stdout, cwd);
+    try testing.expectStringEndsWith(result.stdout, "build.zig\n");
+
     try testing.expectEqualStrings("", result.stderr);
 }
 

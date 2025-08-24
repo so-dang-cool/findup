@@ -1,81 +1,124 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
-const Writer = std.io.Writer;
-const Dir = std.fs.Dir;
-const exit = std.posix.exit;
 
-const Findup = struct { program: [:0]const u8, target: [:0]const u8, cwd: Dir, printHelp: bool, printVersion: bool };
-const FindupError = error{NoFileSpecified};
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
-const VERSION = "findup 1.1.3\n";
+var stderr_buffer: [1024]u8 = undefined;
+var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+const stderr = &stderr_writer.interface;
+
+const Findup = struct {
+    program: [:0]const u8,
+    target: ?[:0]const u8,
+    cwd: std.fs.Dir,
+    printDirOnly: bool,
+    printHelp: bool,
+    printVersion: bool,
+};
+
+const VERSION = "findup 2.0.0";
 
 const USAGE =
     \\USAGE:
-    \\    findup FILE
+    \\    findup [FLAG] FILE
     \\
     \\FLAGS:
-    \\    -h, --help    Prints help information
-    \\    -V, --version Prints version information
+    \\    -d, --print-directory Print the parent directory
+    \\    -h, --help            Print this help message
+    \\    -V, --version         Print version
     \\
-    \\Finds a directory containing FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
+    \\Finds the FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
     \\
-    \\The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.
+    \\The nearest FILE will be printed. If no parent directory contains FILE, nothing is printed and the program exits with an exit code of 1.
     \\
-    \\By J.R. Hill. https://github.com/booniepepper/findup
+    \\If --print-directory (-d) is specified, only the parent directory will be printed, omitting the filename.
+    \\
+    \\https://github.com/so-dang-cool/findup
     \\
 ;
 
 pub fn main() anyerror!void {
-    var buf: [std.fs.max_path_bytes]u8 = undefined;
+    var dir_buf: [std.fs.max_path_bytes]u8 = undefined;
 
-    const findup = initFindup() catch |err| {
-        try stderr.print("ERROR: {?}\n\n{s}", .{ err, USAGE });
-        exit(1);
-    };
+    const findup = initFindup();
 
     if (findup.printHelp) {
         try stdout.print("{s}\n{s}", .{ VERSION, USAGE });
-        exit(0);
+        try stdout.flush();
+        std.posix.exit(0);
     } else if (findup.printVersion) {
-        try stdout.print(VERSION, .{});
-        exit(0);
+        try stdout.print("{s}\n", .{VERSION});
+        try stdout.flush();
+        std.posix.exit(0);
     }
 
-    var cwd = findup.cwd;
+    if (findup.target == null) {
+        try stderr.print("ERROR: No FILE specified\n\n{s}", .{USAGE});
+        try stderr.flush();
+        std.posix.exit(1);
+    }
 
+    const file = findup.target.?;
+
+    var cwd = findup.cwd;
     const result = while (true) {
-        const cwdStr = try dirStr(cwd, buf[0..]);
-        if (try fileExists(cwd, findup.target)) break cwdStr;
+        const cwdStr = try cwd.realpath(".", dir_buf[0..]);
+        if (try fileExists(cwd, file)) break cwdStr;
         if (std.mem.eql(u8, "/", cwdStr)) break null;
         try std.posix.chdir("..");
         cwd = std.fs.cwd();
     } else unreachable;
 
-    if (result == null) exit(1);
+    // Never found
+    if (result == null) std.posix.exit(1);
 
-    try stdout.print("{s}\n", .{result.?});
+    const dir = if (std.mem.eql(u8, "/", result.?)) "" else result.?;
+
+    try stdout.print("{s}{c}", .{ dir, std.fs.path.sep });
+    if (!findup.printDirOnly) try stdout.print("{s}", .{file});
+    try stdout.print("\n", .{});
+    try stdout.flush();
 }
 
-fn initFindup() anyerror!Findup {
+fn initFindup() Findup {
     var args = std.process.args();
 
     const program = args.next().?;
-    const maybeTarget = args.next();
-    const target = if (maybeTarget == null) return FindupError.NoFileSpecified else maybeTarget.?;
     const cwd = std.fs.cwd();
 
-    const printHelp = std.mem.eql(u8, "-h", target) or std.mem.eql(u8, "--help", target);
-    const printVersion = std.mem.eql(u8, "-V", target) or std.mem.eql(u8, "--version", target);
+    var printDirOnly = false;
+    var printHelp = false;
+    var printVersion = false;
 
-    return Findup{ .program = program, .target = target, .cwd = cwd, .printHelp = printHelp, .printVersion = printVersion };
+    var target: ?[:0]const u8 = null;
+
+    while (args.next()) |arg| {
+        if (flagged(arg, "-d", "--print-directory"))
+            printDirOnly = true
+        else if (flagged(arg, "-h", "--help"))
+            printHelp = true
+        else if (flagged(arg, "-V", "--version"))
+            printVersion = true
+        else
+            target = arg;
+    }
+
+    return Findup{
+        .program = program,
+        .target = target,
+        .cwd = cwd,
+        .printDirOnly = printDirOnly,
+        .printHelp = printHelp,
+        .printVersion = printVersion,
+    };
 }
 
-fn dirStr(dir: Dir, buf: []u8) anyerror![]u8 {
-    return try dir.realpath(".", buf);
+fn flagged(arg: []const u8, short: []const u8, long: []const u8) bool {
+    return std.mem.eql(u8, short, arg) or std.mem.eql(u8, long, arg);
 }
 
-fn fileExists(dir: Dir, filename: []const u8) !bool {
+fn fileExists(dir: std.fs.Dir, filename: []const u8) !bool {
     dir.access(filename, .{}) catch |err| {
         return switch (err) {
             error.FileNotFound => false,
