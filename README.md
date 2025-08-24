@@ -1,18 +1,22 @@
 # `findup`
 
 ```text
-findup 1.1.2
-
+findup 2.0.0
 USAGE:
-    findup FILE
+    findup [FLAG] FILE
 
 FLAGS:
-    -h, --help    Prints help information
-    -V, --version Prints version information
+    -d, --print-directory Print the parent directory
+    -h, --help            Print this help message
+    -V, --version         Print version
 
-Finds a directory containing FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
+Finds the FILE. Tested by filename with exact string equality. Starts searching at the current working directory and recurses "up" through parent directories.
 
-The first directory containing FILE will be printed. If no directory contains FILE, nothing is printed and the program exits with an exit code of 1.⏎      
+The nearest FILE will be printed. If no parent directory contains FILE, nothing is printed and the program exits with an exit code of 1.
+
+If --print-directory (-d) is specified, only the parent directory will be printed, omitting the filename.
+
+https://github.com/so-dang-cool/findup
 ```
 
 # Installation
