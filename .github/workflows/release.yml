@@ -1,33 +1,22 @@
 on:
   release:
-    types: [created]
-
-name: Add artifacts to release
+    types: [created, released]
 
 jobs:
   generate:
     name: Create release artifacts
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: 0.14.1
+      - uses: goto-bus-stop/setup-zig@v2
+        with: { version: 0.15.1 }
 
-      - name: Checkout project
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
-      - name: zig build test
-        run: |
-          zig env
-          zig build test
+      - run: zig env
+      - run: zig build test
+      - run: zig build cross -Doptimize=ReleaseSmall
 
-      - name: zig build cross -Doptimize=ReleaseSmall
-        run: |
-          zig env
-          zig build cross -Doptimize=ReleaseSmall
-
-      - name: Upload the artifacts
+      - name: Upload Artifacts
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,37 +1,18 @@
 name: compile
 
-on:
-  push:
-    branches:
-      - core
-  pull_request:
-    branches:
-      - core
+on: [ push, pull_request ]
 
 jobs:
   compile:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: 0.14.1
+      - uses: goto-bus-stop/setup-zig@v2
+        with: { version: 0.15.1 }
 
-      - name: Checkout project
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
-      - name: zig build
-        run: |
-          zig env
-          zig build
-
-      - name: zig build test
-        run: |
-          zig env
-          zig build test
-
-      - name: zig build cross
-        run: |
-          zig env
-          zig build cross
+      - run: zig env
+      - run: zig build
+      - run: zig build test
+      - run: zig build cross
