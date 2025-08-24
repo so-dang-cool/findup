@@ -56,7 +56,7 @@ pub fn main() anyerror!void {
     if (findup.target == null) {
         try stderr.print("ERROR: No FILE specified\n\n{s}", .{USAGE});
         try stderr.flush();
-        std.posix.exit(1);
+        std.posix.exit(2);
     }
 
     const file = findup.target.?;
@@ -70,13 +70,12 @@ pub fn main() anyerror!void {
         cwd = std.fs.cwd();
     } else unreachable;
 
-    // Never found
+    // Nothing found
     if (result == null) std.posix.exit(1);
 
-    const dir = if (std.mem.eql(u8, "/", result.?)) "" else result.?;
-
-    try stdout.print("{s}{c}", .{ dir, std.fs.path.sep });
-    if (!findup.printDirOnly) try stdout.print("{s}", .{file});
+    // Found!
+    try stdout.print("{s}", .{result.?});
+    if (!findup.printDirOnly) try stdout.print("{c}{s}", .{ std.fs.path.sep, file });
     try stdout.print("\n", .{});
     try stdout.flush();
 }

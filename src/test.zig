@@ -24,10 +24,25 @@ test "findup build.zig" {
     var buf: [256]u8 = undefined;
     const cwd = try std.posix.getcwd(&buf);
 
-    // Test that some non-empty string is returned.
-    try testing.expectStringStartsWith(result.stdout, cwd);
-    try testing.expectStringEndsWith(result.stdout, "build.zig\n");
+    const expectedStdout = try std.mem.concat(allocator, u8, &[_][]const u8{ cwd, &[_]u8{std.fs.path.sep}, "build.zig", "\n" });
+    defer allocator.free(expectedStdout);
+    try testing.expectEqualStrings(expectedStdout, result.stdout);
+    try testing.expectEqualStrings("", result.stderr);
+}
 
+test "findup -d build.zig" {
+    const invocation = &[_][]const u8{ findup, "-d", "build.zig" };
+
+    const result = try std.process.Child.run(.{ .allocator = allocator, .argv = invocation });
+    defer allocator.free(result.stdout);
+    defer allocator.free(result.stderr);
+
+    var buf: [256]u8 = undefined;
+    const cwd = try std.posix.getcwd(&buf);
+
+    const expectedStdout = try std.mem.join(allocator, "", &[_][]const u8{ cwd, "\n" });
+    defer allocator.free(expectedStdout);
+    try testing.expectEqualStrings(expectedStdout, result.stdout);
     try testing.expectEqualStrings("", result.stderr);
 }
 
